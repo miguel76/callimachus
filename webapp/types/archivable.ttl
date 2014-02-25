@@ -34,37 +34,22 @@
     rdfs:comment "A composite resource that can be imported/exported as an archive";
     rdfs:isDefinedBy <../../ontology>;
     calli:administrator </auth/groups/super>;
-    calli:author </auth/groups/users>,</auth/groups/staff>,</auth/groups/power>,</auth/groups/admin>;
-    calli:icon <../images/folder.png>;
-    calli:thumbnail <../images/folder.svg>;
-    calli:view <../templates/folder-view.xhtml>;
-    calli:edit <../templates/folder-edit.xhtml>;
-    calli:create <../templates/folder-create.xhtml>.
-
-# when a Folder is created
-:CreateFolder owl:intersectionOf (<creatable.ttl#PostCreate>
-        [owl:onProperty msg:target; owl:hasValue <Folder> ]);
-    calli:imports <java:org.callimachusproject.server.exceptions.BadRequest>;
-    calli:script """
-        var uri = location.toString();
-        if (uri.lastIndexOf('/') != uri.length - 1)
-            throw new BadRequest("Folders must end with a slash");
-        return proceed();
-    """.
+    calli:author </auth/groups/users>,</auth/groups/staff>,</auth/groups/power>,</auth/groups/admin>.
 
 ################################
 # POST file
 ################################
 
 :PostFileSlug rdfs:subClassOf msg:Message;
-    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <Folder>];
+    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <>];
     rdfs:subClassOf [owl:onProperty msg:object; owl:allValuesFrom rdfs:Resource];
-    rdfs:subClassOf [owl:onProperty :fileClass; owl:hasValue <File>];
+    rdfs:subClassOf [owl:onProperty :fileClass; owl:hasValue calliTypes:File];
     calli:method "POST";
     calli:query "contents";
     calli:requires calli:contributor;
     calli:type "message/x-response";
     calli:imports <java:org.callimachusproject.server.exceptions.BadRequest>;
+    calli:imports <java:org.callimachusproject.engine.model.TermFactory>;
     calli:script """
         if (!slug)
             throw new BadRequest("Missing Slug HTTP header");
@@ -80,7 +65,7 @@
             name = name.toLowerCase();
         }
         name = name.replace(/[^\\w\\+\\-\\_\\.\\!\\~\\*\\'\\(\\);\\,\\&\\=\\$\\[\\]]+/g,'_');
-        var uri = this.resolve(name);
+        var uri = TermFactory.newInstance(this.toString() + "/").resolve(name);
         return this.PostFactoryCreate(content, fileClass, false, con.getObject(uri), contentType);
     """.
 
@@ -105,11 +90,11 @@
     rdfs:domain :PostFileSlug.
 
 ################################
-# List folder contents
+# List contents
 ################################
 
 :GetFolderFeed rdfs:subClassOf msg:Message;
-    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <Folder>];
+    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <>];
     rdfs:subClassOf [owl:onProperty msg:object; owl:allValuesFrom <java:java.io.InputStream>];
     calli:method "GET";
     calli:query "contents";
@@ -124,7 +109,7 @@
 ################################
 
 :GetFolderChanges rdfs:subClassOf msg:Message;
-    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <Folder>];
+    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <>];
     rdfs:subClassOf [owl:onProperty msg:object; owl:allValuesFrom <java:java.io.Reader>];
     calli:method "GET";
     calli:query "changes";
@@ -135,7 +120,7 @@
     calli:copy "../pipelines/folder-changes-html.xpl?results&target={0}".
     
 :GetFolderChangeAtom rdfs:subClassOf msg:Message;
-    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <Folder>];
+    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <>];
     rdfs:subClassOf [owl:onProperty msg:object; owl:allValuesFrom <java:java.io.InputStream>];
     calli:method "GET";
     calli:query "changes";
@@ -145,11 +130,11 @@
     calli:copy "../pipelines/folder-changes-atom.xpl?results&target={0}".
     
 ################################
-# Export folder contents
+# Export contents
 ################################
 
 :DownloadFolderComponents rdfs:subClassOf msg:Message;
-    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <Folder>];
+    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <>];
     rdfs:subClassOf [owl:onProperty msg:object; owl:allValuesFrom rdfs:Resource];
     calli:method "GET";
     calli:query "archive";
@@ -171,47 +156,12 @@
         };
     """.
 
-:GetRdfFolderDescription rdfs:subClassOf msg:Message;
-    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <Folder>];
-    rdfs:subClassOf [owl:onProperty msg:object; owl:allValuesFrom <java:org.openrdf.query.GraphQueryResult>];
-    calli:type "application/rdf+xml;q=0.4", "text/turtle;q=0.5";
-    msg:sparql """
-        PREFIX rdf:<http://www.w3.org/1999/02/22-rdf-syntax-ns#>
-        PREFIX rdfs:<http://www.w3.org/2000/01/rdf-schema#>
-        PREFIX prov:<http://www.w3.org/ns/prov#>
-        PREFIX calli:<http://callimachusproject.org/rdf/2009/framework#>
-        CONSTRUCT {
-            $this a <Folder>, calli:Folder;
-                rdfs:label ?label;
-                calli:describedby ?describedby;
-                calli:reader ?reader;
-                calli:subscriber ?subscriber;
-                calli:editor ?editor;
-                calli:administrator ?administrator.
-        } WHERE {
-            $this a <Folder>
-            {
-                $this rdfs:label ?label
-            } UNION {
-                $this calli:describedby ?describedby
-            } UNION {
-                $this calli:reader ?reader
-            } UNION {
-                $this calli:subscriber ?subscriber
-            } UNION {
-                $this calli:editor ?editor
-            } UNION {
-                $this calli:administrator ?administrator
-            }
-        }
-    """.
-
 ################################
 # Import folder contents
 ################################
 
 :GetFolderUploadPage rdfs:subClassOf msg:Message;
-    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <Folder>];
+    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <>];
     rdfs:subClassOf [owl:onProperty msg:literal; owl:allValuesFrom xsd:string];
     rdfs:subClassOf [owl:onProperty :folder_import_xhtml; owl:hasValue <../pages/folder-import.xhtml>];
     calli:method "GET";
@@ -227,7 +177,7 @@
     rdfs:domain :GetFolderUploadPage.
 
 :ImportFolderComponents rdfs:subClassOf msg:Message;
-    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <Folder>];
+    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <>];
     rdfs:subClassOf [owl:onProperty msg:object; owl:allValuesFrom rdfs:Resource];
     calli:method "POST";
     calli:query "import";
@@ -257,7 +207,7 @@
     calli:type "multipart/form-data".
 
 :DeleteFolderContents rdfs:subClassOf msg:Message;
-    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <Folder>];
+    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <>];
     rdfs:subClassOf [owl:onProperty msg:object; owl:allValuesFrom owl:Nothing];
     calli:method "DELETE";
     calli:query "archive";
@@ -290,7 +240,7 @@
     """.
 
 :UploadFolderComponents rdfs:subClassOf msg:Message;
-    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <Folder>];
+    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <>];
     rdfs:subClassOf [owl:onProperty msg:object; owl:allValuesFrom owl:Nothing];
     rdfs:subClassOf [owl:onProperty :uploadFileClass; owl:hasValue <File>];
     rdfs:subClassOf [owl:onProperty :schemaGraphClass; owl:hasValue <RdfSchemaGraph>];
@@ -346,7 +296,7 @@
             var type = carStream.getEntryType();
             try {
                 if (carStream.isFolderEntry()) {
-                    this.DesignateAsFolder(location);
+//                    this.DesignateAsFolder(location);
                     dependency.remove(location);
                 } else if (carStream.isFileEntry()) {
                     if (!(container instanceof Composite))
@@ -440,40 +390,4 @@
 :component a owl:FunctionalProperty, owl:ObjectProperty;
     rdfs:domain :FindExistingContainer.
 
-:DesignateAsFolder rdfs:subClassOf msg:Message;
-    rdfs:subClassOf [owl:onProperty msg:target; owl:allValuesFrom <Folder>];
-    rdfs:subClassOf [owl:onProperty msg:object; owl:allValuesFrom <Folder>];
-    calli:imports <Folder>;
-    calli:imports <Composite>;
-    calli:imports <java:org.openrdf.model.vocabulary.RDF>;
-    calli:imports <java:org.openrdf.model.vocabulary.RDFS>;
-    calli:imports <java:org.callimachusproject.server.exceptions.BadRequest>;
-    calli:script """
-        if (nonFolder instanceof Folder)
-            return nonFolder;
-        var con = this.objectConnection;
-        var vf = con.getValueFactory();
-        var uri = nonFolder.toString();
-        var container = this.FindExistingContainer(nonFolder);
-        if (!container) {
-            container = con.getObject(uri.substring(0, uri.lastIndexOf('/', uri.length - 2) + 1));
-            if (!(container instanceof Folder)) {
-                container = this.DesignateAsFolder(container);
-            }
-        }
-        if (!(container instanceof Composite))
-            throw new BadRequest("Schema data about " + container + " must be imported before " + uri);
-        var label = decodeURI(uri.substring(uri.lastIndexOf('/', uri.length - 2) + 1, uri.length - 1)).replace(/-/g, ' ');
-        con.add(nonFolder.resource, RDFS.LABEL, vf.createLiteral(label), []);
-        nonFolder.calliReader.addAll(container.calliReader);
-        nonFolder.calliSubscriber.addAll(container.calliSubscriber);
-        nonFolder.calliEditor.addAll(container.calliEditor);
-        nonFolder.calliAdministrator.addAll(container.calliAdministrator);
-        container.calliHasComponent.add(nonFolder);
-        con.add(nonFolder.resource, RDF.TYPE, vf.createURI("http://callimachusproject.org/rdf/2009/framework#Folder"), []);
-        return con.addDesignation(nonFolder, Folder);
-    """.
-
-:nonFolder a owl:FunctionalProperty, owl:ObjectProperty;
-    rdfs:domain :DesignateAsFolder.
 
